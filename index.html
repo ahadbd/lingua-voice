@@ -43,12 +43,15 @@
             <span id="label-fi" class="lang-label">Finnish</span>
           </div>
 
-          <div style="display: flex; justify-content: center; gap: 1rem; margin-top: 1rem;">
-            <label style="font-size: 0.8rem; display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
+          <div style="display: flex; flex-wrap: wrap; justify-content: center; gap: 1rem; margin-top: 1rem;">
+            <label class="pro-toggle">
               <input type="checkbox" id="auto-speak-toggle" checked> Auto-Speak
             </label>
-            <label style="font-size: 0.8rem; display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
+            <label class="pro-toggle">
               <input type="checkbox" id="auto-detect-toggle"> Auto-Detect
+            </label>
+            <label class="pro-toggle pro-only">
+              <input type="checkbox" id="tone-toggle"> Puhekieli (Spoken)
             </label>
           </div>
         </div>
@@ -104,11 +107,44 @@
                     </polygon>
                   </svg>
                 </button>
+                <button id="share-img-btn" class="action-btn pro-only" title="Share as Image">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                    <circle cx="8.5" cy="8.5" r="1.5"></circle>
+                    <polyline points="21 15 16 10 5 21"></polyline>
+                  </svg>
+                </button>
               </div>
             </div>
             <div id="translated-text" class="content" data-placeholder="Translation will appear here..."></div>
             <div id="phonetic-text" class="phonetic"></div>
+            <div id="grammar-hint" class="grammar-hint"></div>
           </div>
+        </div>
+
+        <div class="pro-actions">
+          <button id="ocr-btn" class="pro-btn" title="Translate from Image">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path>
+              <circle cx="12" cy="13" r="4"></circle>
+            </svg>
+            Scan Image
+          </button>
+          <button id="conv-btn" class="pro-btn pro-only" title="Conversation Mode">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M17 6.1H3a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-10a2 2 0 0 0-2-2zM4.5 11h3M4.5 15h10">
+              </path>
+              <path d="M23 4v12"></path>
+            </svg>
+            Conversation
+          </button>
+          <button id="learn-btn" class="pro-btn" title="Learning Mode">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"></path>
+              <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"></path>
+            </svg>
+            Study Space
+          </button>
         </div>
 
         <div class="button-container">
@@ -131,6 +167,24 @@
 
     <!-- Sidebar Section -->
     <div class="sidebar">
+      <!-- Pro Analytics -->
+      <div class="section-card pro-card">
+        <div class="section-title">PRO ANALYTICS</div>
+        <div class="progress-stats">
+          <div class="stat-circle">
+            <svg viewBox="0 0 36 36" class="circular-chart">
+              <path class="circle-bg"
+                d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+              <path class="circle" id="progress-val" stroke-dasharray="0, 100"
+                d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+            </svg>
+            <div class="percentage" id="daily-count">0</div>
+          </div>
+          <div class="stat-text">Daily Phrases</div>
+        </div>
+        <canvas id="analytics-chart" height="120"></canvas>
+      </div>
+
       <!-- Favorites -->
       <div class="section-card">
         <div class="section-title">
@@ -163,6 +217,21 @@
 
   <!-- Toast Notification -->
   <div id="toast" class="toast">Text copied to clipboard!</div>
+
+  <!-- Pro Modals -->
+  <div id="pro-modal" class="modal-overlay">
+    <div class="modal-content glass-card">
+      <div class="modal-header">
+        <h2 id="modal-title">Pro Feature</h2>
+        <button class="close-modal" id="close-modal">&times;</button>
+      </div>
+      <div id="modal-body" class="modal-body">
+        <!-- Dynamic Content -->
+      </div>
+    </div>
+  </div>
+
+  <input type="file" id="ocr-upload" style="display: none;" accept="image/*">
 
   <script type="module" src="/src/main.js"></script>
 </body>

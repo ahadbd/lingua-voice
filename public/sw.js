@@ -1,10 +1,12 @@
-const CACHE_NAME = 'linguavoice-v3';
+const CACHE_NAME = 'linguavoice-pro-v5';
 const ASSETS = [
     '/',
     '/index.html',
     '/src/main.js',
     '/src/style.css',
-    '/vite.svg'
+    '/vite.svg',
+    'https://cdn.jsdelivr.net/npm/chart.js',
+    'https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js'
 ];
 
 self.addEventListener('install', (e) => {

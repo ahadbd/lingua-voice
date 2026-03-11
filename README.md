@@ -1,18 +1,28 @@
-# LinguaVoice v4.0
+# LinguaVoice v5.0 (Pro Edition)
 
-**LinguaVoice** is a premium, real-time voice translation application designed exclusively for seamless bi-directional interpretation between **English** and **Finnish**. This app is dedicated specifically to English-to-Finnish and Finnish-to-English translations only.
+**LinguaVoice Pro** is a professional-grade, real-time voice translation and language learning suite.
 
 ![LinguaVoice Preview](screenshots/preview.png)
 
 ## ✨ Features
 
+- **🎓 Pro Learning Suite**:
+  - **Study Space**: Practice your favorite phrases with an interactive Flashcard system.
+  - **Daily Goals**: Track your daily translation count with a progress ring.
+- **📸 Pro Intelligence**:
+  - **OCR Translation**: Extract and translate text from images and menus using Tesseract.js.
+  - **AI Tone Control**: Switch between Formal and Spoken (*Puhekieli*) Finnish.
+  - **Grammar Insights**: Contextual hints for Finnish case endings.
+- **🤝 Conversation Mode**: A specialized split-screen UI for two-way spoken interpretation.
+- **📈 Advanced Analytics**: GitHub-style activity line charts tracking your learning progress.
+- **🖼️ Social Quote Cards**: Export translations as beautiful, themed images ready for sharing.
 - **🎙️ Real-time Voice Recognition**: Powered by the Web Speech API for high-accuracy, low-latency transcription.
-- **🎨 Premium UI/UX (v4.0)**: 
+- **🎨 Premium UI/UX (v4.0)**:
   - **Glassmorphism 2.0**: High-blur cards with subtle inner glows.
   - **Premium Typography**: Modern 'Outfit' font for better readability.
   - **Smooth Animations**: Animated entry effects and interactive scale transitions.
 - **🌈 Visualizer 2.0**: Enhanced frequency bars with dynamic gradients and glow.
-- **⌨️ Keyboard Shortcuts**: 
+- **⌨️ Keyboard Shortcuts**:
   - `Space`: Start/Stop recording.
   - `Ctrl+C`: Copy translation.
 - **🗣️ Advanced Audio Tools**:

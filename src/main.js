@@ -1,7 +1,14 @@
 import './style.css'
+import { Chart, registerables } from 'chart.js';
+import Tesseract from 'tesseract.js';
+import html2canvas from 'html2canvas';
+import { DateTime } from 'luxon';
+
+Chart.register(...registerables);
 
 // DOM Elements
 const body = document.body;
+const h1 = document.querySelector('h1');
 const listenBtn = document.getElementById('listen-btn');
 const btnText = document.getElementById('btn-text');
 const langToggle = document.getElementById('lang-toggle');
@@ -30,6 +37,22 @@ if ('serviceWorker' in navigator) {
 // Control Toggles
 const autoSpeakToggle = document.getElementById('auto-speak-toggle');
 const autoDetectToggle = document.getElementById('auto-detect-toggle');
+const toneToggle = document.getElementById('tone-toggle');
+
+// Pro Elements
+const dailyCountText = document.getElementById('daily-count');
+const progressCircle = document.getElementById('progress-val');
+const grammarHint = document.getElementById('grammar-hint');
+const ocrBtn = document.getElementById('ocr-btn');
+const learnBtn = document.getElementById('learn-btn');
+const analyticsCanvas = document.getElementById('analytics-chart');
+const proModal = document.getElementById('pro-modal');
+const modalTitle = document.getElementById('modal-title');
+const modalBody = document.getElementById('modal-body');
+const closeModal = document.getElementById('close-modal');
+const ocrUpload = document.getElementById('ocr-upload');
+const convBtn = document.getElementById('conv-btn');
+const shareImgBtn = document.getElementById('share-img-btn');
 
 // Action Buttons
 const copyOrigBtn = document.getElementById('copy-orig');
@@ -50,6 +73,8 @@ let animationId = null;
 
 let history = JSON.parse(localStorage.getItem('trans_history') || '[]');
 let favorites = JSON.parse(localStorage.getItem('trans_favorites') || '[]');
+let stats = JSON.parse(localStorage.getItem('trans_stats') || '{"dailyRange": [], "todayCount": 0, "lastDate": ""}');
+let chartInstance = null;
 
 // --- UTILS ---
 
@@ -98,6 +123,81 @@ const saveToHistory = (orig, trans) => {
   history = [newItem, ...history].slice(0, 10);
   localStorage.setItem('trans_history', JSON.stringify(history));
   renderHistory();
+  updateProStats();
+};
+
+const updateProStats = () => {
+  const now = DateTime.now().toISODate();
+  if (stats.lastDate !== now) {
+    stats.todayCount = 0;
+    stats.lastDate = now;
+  }
+  stats.todayCount++;
+
+  // Track last 7 days for the chart
+  const entryIdx = stats.dailyRange.findIndex(e => e.date === now);
+  if (entryIdx > -1) stats.dailyRange[entryIdx].count = stats.todayCount;
+  else stats.dailyRange.push({ date: now, count: stats.todayCount });
+
+  if (stats.dailyRange.length > 7) stats.dailyRange.shift();
+
+  localStorage.setItem('trans_stats', JSON.stringify(stats));
+  renderProStats();
+};
+
+const renderProStats = () => {
+  const dailyGoal = 10;
+  const progress = Math.min((stats.todayCount / dailyGoal) * 100, 100);
+  dailyCountText.textContent = stats.todayCount;
+  progressCircle.style.strokeDasharray = `${progress}, 100`;
+
+  if (chartInstance) {
+    chartInstance.data.datasets[0].data = stats.dailyRange.map(e => e.count);
+    chartInstance.update();
+  }
+  renderWordCloud();
+};
+
+const renderWordCloud = () => {
+  // Simple word frequency from history
+  const words = history.map(h => h.orig.split(/\s+/)).flat().filter(w => w.length > 3);
+  const freq = {};
+  words.forEach(w => freq[w] = (freq[w] || 0) + 1);
+  const sorted = Object.entries(freq).sort((a, b) => b[1] - a[1]).slice(0, 5);
+
+  if (sorted.length > 0) {
+    const cloudHTML = sorted.map(([w, f]) => `<span style="font-size: ${0.7 + (f * 0.2)}rem; margin-right: 5px; opacity: 0.8">${w}</span>`).join('');
+    // Append to Pro Analytics card if we had a dedicated container, 
+    // for now we'll just log or find a spot.
+    console.log('Word Cloud:', sorted);
+  }
+};
+
+const initAnalytics = () => {
+  const ctx = analyticsCanvas.getContext('2d');
+  chartInstance = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: stats.dailyRange.map(e => e.date.split('-').slice(1).join('/')),
+      datasets: [{
+        label: 'Phrases',
+        data: stats.dailyRange.map(e => e.count),
+        borderColor: '#38bdf8',
+        backgroundColor: 'rgba(56, 189, 248, 0.1)',
+        fill: true,
+        tension: 0.4,
+        pointRadius: 0
+      }]
+    },
+    options: {
+      responsive: true,
+      plugins: { legend: { display: false } },
+      scales: {
+        x: { display: false },
+        y: { display: false, beginAtZero: true }
+      }
+    }
+  });
 };
 
 const toggleFavorite = () => {
@@ -164,6 +264,120 @@ const downloadAudio = (text, lang) => {
   showToast('Download started (Transcript)');
 };
 
+// --- PRO MODAL LOGIC ---
+
+const openModal = (title, contentHTML) => {
+  modalTitle.textContent = title;
+  modalBody.innerHTML = contentHTML;
+  proModal.classList.add('active');
+};
+
+closeModal.onclick = () => proModal.classList.remove('active');
+window.onclick = (e) => { if (e.target === proModal) proModal.classList.remove('active'); };
+
+// OCR Logic
+ocrBtn.onclick = () => ocrUpload.click();
+
+ocrUpload.onchange = async (e) => {
+  const file = e.target.files[0];
+  if (!file) return;
+
+  openModal('Scanning Image...', `
+    <div style="text-align:center; padding: 2rem;">
+      <div class="shimmer" style="height: 100px; border-radius: 12px; margin-bottom: 1rem;"></div>
+      <p>Analyzing text with OCR...</p>
+    </div>
+  `);
+
+  try {
+    const result = await Tesseract.recognize(file, 'eng+fin', {
+      logger: m => console.log(m)
+    });
+    const text = result.data.text.trim();
+    if (text) {
+      originalDisplay.textContent = text;
+      const source = langToggle.checked ? 'fi' : 'en';
+      const target = langToggle.checked ? 'en' : 'fi';
+      translateText(text, source, target);
+      proModal.classList.remove('active');
+      showToast('Text extracted successfully!');
+    } else {
+      modalBody.innerHTML = '<p style="color:var(--error)">No text found in image.</p>';
+    }
+  } catch (err) {
+    modalBody.innerHTML = `<p style="color:var(--error)">OCR Error: ${err.message}</p>`;
+  }
+};
+
+// Study Space (Flashcards)
+let currentCardIdx = 0;
+learnBtn.onclick = () => {
+  if (favorites.length === 0) {
+    showToast('Add some favorites first!');
+    return;
+  }
+  currentCardIdx = 0;
+  renderFlashcard();
+};
+
+const renderFlashcard = () => {
+  const card = favorites[currentCardIdx];
+  const content = `
+    <div class="flashcard" id="current-flashcard">
+      <div class="flashcard-inner">
+        <div class="card-front">${card.orig}</div>
+        <div class="card-back">${card.trans}</div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="pro-btn" id="prev-card">←</button>
+      <span>${currentCardIdx + 1} / ${favorites.length}</span>
+      <button class="pro-btn" id="next-card">→</button>
+    </div>
+  `;
+  openModal('Study Space', content);
+
+  const fc = document.getElementById('current-flashcard');
+  fc.onclick = () => fc.classList.toggle('flipped');
+
+  document.getElementById('prev-card').onclick = () => {
+    currentCardIdx = (currentCardIdx - 1 + favorites.length) % favorites.length;
+    renderFlashcard();
+  };
+  document.getElementById('next-card').onclick = () => {
+    currentCardIdx = (currentCardIdx + 1) % favorites.length;
+    renderFlashcard();
+  };
+};
+
+// Conversation Mode
+convBtn.onclick = () => {
+  body.classList.toggle('conversation-active');
+  if (body.classList.contains('conversation-active')) {
+    showToast('Conversation Mode Active - Mic handles bi-directional flow');
+    // In this mode, we could potentially use two mic buttons,
+    // but for now, we'll just make the UI more "immersive".
+    h1.style.display = 'none';
+  } else {
+    h1.style.display = 'block';
+  }
+};
+
+// Quote Card Generator
+shareImgBtn.onclick = async () => {
+  const box = document.getElementById('trans-box');
+  showToast('Generating Quote Card...');
+  const canvas = await html2canvas(box, {
+    backgroundColor: '#0f172a',
+    scale: 2
+  });
+  const link = document.createElement('a');
+  link.download = `lingua-quote-${Date.now()}.png`;
+  link.href = canvas.toDataURL();
+  link.click();
+  showToast('Card saved to gallery!');
+};
+
 // --- VISUALIZER ---
 
 const initVisualizer = async () => {
@@ -221,18 +435,42 @@ const translateText = async (text, source, target) => {
 
   transBox.classList.add('shimmer');
   try {
-    const response = await fetch(`https://api.mymemory.translated.net/get?q=${encodeURIComponent(text)}&langpair=${source}|${target}`);
+    let query = text;
+    if (target === 'fi' && toneToggle.checked) {
+      // Logic for Finnish Spoken flair (Puhekieli)
+      // This is a mock/simple text replacement to simulate "spoken" style
+      // e.g. replacing common endings or words if they match patterns
+    }
+
+    const response = await fetch(`https://api.mymemory.translated.net/get?q=${encodeURIComponent(query)}&langpair=${source}|${target}`);
     const data = await response.json();
 
     if (data.responseData) {
-      const translated = data.responseData.translatedText;
+      let translated = data.responseData.translatedText;
+
+      // Post-process for Tone (Puhekieli mock)
+      if (target === 'fi' && toneToggle.checked) {
+        translated = translated
+          .replace(/minä olen/gi, 'mä oon')
+          .replace(/sinä olet/gi, 'sä oot')
+          .replace(/hän on/gi, 'se on')
+          .replace(/me olemme/gi, 'me ollaan')
+          .replace(/te olette/gi, 'te ootte')
+          .replace(/he ovat/gi, 'ne on');
+      }
+
       translatedDisplay.textContent = translated;
 
-      // Auto-Detect & Auto-Switch
-      if (autoDetectToggle.checked) {
-        // Simple heuristic: if we speak English but toggle is on Finnish, switch it.
-        // MyMemory doesn't return source lang consistently in free tier, 
-        // but we'll simulate the UX here.
+      // Grammar Insights (Pro feature)
+      if (target === 'fi') {
+        const cases = ['ssa', 'lla', 'sta', 'lta', 'lla', 'ksi', 'hän', 'ko'];
+        const found = cases.filter(c => translated.toLowerCase().includes(c));
+        if (found.length > 0) {
+          grammarHint.style.display = 'block';
+          grammarHint.textContent = `💡 Hint: Uses '${found[0]}' ending for context.`;
+        } else {
+          grammarHint.style.display = 'none';
+        }
       }
 
       // Phonetics Mock
@@ -391,3 +629,5 @@ window.addEventListener('keydown', (e) => {
 // Initial Load
 renderHistory();
 renderFavorites();
+initAnalytics();
+renderProStats();
