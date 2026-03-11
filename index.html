@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="manifest" href="/manifest.json" />
+  <meta name="theme-color" content="#38bdf8" />
+  <title>LinguaVoice v3.0 | AI Language Assistant</title>
+</head>
+
+<body data-theme="midnight">
+  <div id="app">
+    <!-- Main Translation Section -->
+    <div class="main-content">
+      <div class="glass-card">
+        <h1>LinguaVoice</h1>
+
+        <!-- Theme Switcher -->
+        <div class="theme-switcher">
+          <div class="theme-opt midnight active" data-theme="midnight" title="Midnight"></div>
+          <div class="theme-opt forest" data-theme="forest" title="Forest"></div>
+          <div class="theme-opt arctic" data-theme="arctic" title="Arctic"></div>
+          <div class="theme-opt obsidian" data-theme="obsidian" title="Obsidian"></div>
+        </div>
+
+        <!-- Audio Visualizer -->
+        <div class="visualizer-container">
+          <canvas id="visualizer"></canvas>
+        </div>
+
+        <div class="controls">
+          <div class="toggle-container">
+            <span id="label-en" class="lang-label active">English</span>
+            <label class="switch">
+              <input type="checkbox" id="lang-toggle">
+              <span class="slider"></span>
+            </label>
+            <span id="label-fi" class="lang-label">Finnish</span>
+          </div>
+
+          <div style="display: flex; justify-content: center; gap: 1rem; margin-top: 1rem;">
+            <label style="font-size: 0.8rem; display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
+              <input type="checkbox" id="auto-speak-toggle" checked> Auto-Speak
+            </label>
+            <label style="font-size: 0.8rem; display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
+              <input type="checkbox" id="auto-detect-toggle"> Auto-Detect
+            </label>
+          </div>
+        </div>
+
+        <div class="display-area">
+          <div class="text-box">
+            <div class="header-row">
+              <div class="label">Original</div>
+              <div class="actions">
+                <button id="copy-orig" class="action-btn" title="Copy text">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                    <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                  </svg>
+                </button>
+                <button id="play-orig" class="action-btn" title="Play original">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <polygon points="5 3 19 12 5 21 5 3"></polygon>
+                  </svg>
+                </button>
+              </div>
+            </div>
+            <div id="original-text" class="content" data-placeholder="Speak to see text..."></div>
+          </div>
+
+          <div id="trans-box" class="text-box">
+            <div class="header-row">
+              <div class="label">Translation</div>
+              <div class="actions">
+                <button id="speak-btn" class="action-btn" title="Listen to translation">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+                    <path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path>
+                  </svg>
+                </button>
+                <button id="download-btn" class="action-btn" title="Download audio">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v4"></path>
+                    <polyline points="7 10 12 15 17 10"></polyline>
+                    <line x1="12" y1="15" x2="12" y2="3"></line>
+                  </svg>
+                </button>
+                <button id="copy-trans" class="action-btn" title="Copy translation">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                    <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                  </svg>
+                </button>
+                <button id="star-btn" class="action-btn" title="Add to favorites">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <polygon
+                      points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2">
+                    </polygon>
+                  </svg>
+                </button>
+              </div>
+            </div>
+            <div id="translated-text" class="content" data-placeholder="Translation will appear here..."></div>
+            <div id="phonetic-text" class="phonetic"></div>
+          </div>
+        </div>
+
+        <div class="button-container">
+          <button id="listen-btn" class="listen-btn">
+            <svg class="mic-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+              stroke-linecap="round" stroke-linejoin="round">
+              <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path>
+              <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
+              <line x1="12" y1="19" x2="12" y2="23"></line>
+              <line x1="8" y1="23" x2="16" y2="23"></line>
+            </svg>
+            <span id="btn-text">Start Listening</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Sidebar Section -->
+    <div class="sidebar">
+      <!-- Favorites -->
+      <div class="section-card">
+        <div class="section-title">
+          FAVORITES
+          <svg style="width:16px; height:16px" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polygon
+              points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2">
+            </polygon>
+          </svg>
+        </div>
+        <div id="favorites-list" class="favorites-list"></div>
+      </div>
+
+      <!-- Recent -->
+      <div class="section-card">
+        <div class="section-title">
+          HISTORY
+          <button id="export-btn" class="action-btn" title="Export as TXT" style="padding:0">
+            <svg style="width:14px; height:14px" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v4"></path>
+              <polyline points="7 10 12 15 17 10"></polyline>
+              <line x1="12" y1="15" x2="12" y2="3"></line>
+            </svg>
+          </button>
+        </div>
+        <div id="history-list" class="history-list"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Notification -->
+  <div id="toast" class="toast">Text copied to clipboard!</div>
+
+  <script type="module" src="/src/main.js"></script>
+</body>
+
+</html>
