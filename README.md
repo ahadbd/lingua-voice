@@ -2,7 +2,7 @@
 
 **LinguaVoice Pro** is a professional-grade, real-time voice translation and language learning suite.
 
-![LinguaVoice Pro v6.1 Preview](screenshots/v6_1_pro_preview.png)
+![LinguaVoice Pro v6.1 Dashboard](screenshots/v6_1_pro_dashboard.png)
 
 ## ✨ Features
 
