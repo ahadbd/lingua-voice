@@ -53,6 +53,9 @@ const closeModal = document.getElementById('close-modal');
 const ocrUpload = document.getElementById('ocr-upload');
 const convBtn = document.getElementById('conv-btn');
 const shareImgBtn = document.getElementById('share-img-btn');
+const visionBtn = document.getElementById('vision-btn');
+const subtitleOverlay = document.getElementById('subtitle-overlay');
+const subtitleContent = document.getElementById('subtitle-content');
 
 // Action Buttons
 const copyOrigBtn = document.getElementById('copy-orig');
@@ -376,6 +379,119 @@ shareImgBtn.onclick = async () => {
   link.href = canvas.toDataURL();
   link.click();
   showToast('Card saved to gallery!');
+};
+
+// --- LIVE VISION & SUBTITLES (v6.0) ---
+
+let cameraStream = null;
+let visionInterval = null;
+let lastVisionText = '';
+let stableCount = 0;
+
+const updateSubtitles = (text, isInterim = false) => {
+  if (!text) {
+    subtitleOverlay.classList.remove('active');
+    return;
+  }
+  subtitleOverlay.classList.add('active');
+  subtitleContent.innerHTML = isInterim ? `<span class="interim">${text}...</span>` : text;
+
+  // Auto-hide after 5s if final
+  if (!isInterim) {
+    clearTimeout(subtitleContent.timer);
+    subtitleContent.timer = setTimeout(() => subtitleOverlay.classList.remove('active'), 5000);
+  }
+};
+
+visionBtn.onclick = () => {
+  openModal('Live Vision', `
+    <div class="vision-container">
+      <video id="vision-video" autoplay playsinline muted></video>
+      <div id="vision-ar" class="vision-ar-layer"></div>
+    </div>
+    <div style="margin-top: 1rem; text-align: center; color: var(--text-secondary);">
+      Point at text to translate in real-time
+    </div>
+  `);
+  startCamera();
+};
+
+const startCamera = async () => {
+  try {
+    const video = document.getElementById('vision-video');
+    cameraStream = await navigator.mediaDevices.getUserMedia({
+      video: { facingMode: 'environment' }
+    });
+    video.srcObject = cameraStream;
+
+    // Start OCR loop
+    visionInterval = setInterval(captureVisionFrame, 3000);
+  } catch (err) {
+    console.error('Camera Error:', err);
+    showToast('Camera access denied');
+  }
+};
+
+const captureVisionFrame = async () => {
+  const video = document.getElementById('vision-video');
+  const arLayer = document.getElementById('vision-ar');
+  if (!video || video.paused) return;
+
+  const canvas = document.createElement('canvas');
+  canvas.width = video.videoWidth;
+  canvas.height = video.videoHeight;
+  const ctx = canvas.getContext('2d');
+
+  // Grayscale & Contrast for better OCR
+  ctx.filter = 'grayscale(1) contrast(1.2)';
+  ctx.drawImage(video, 0, 0);
+
+  try {
+    const result = await Tesseract.recognize(canvas, 'eng+fin');
+    let text = result.data.text.trim()
+      .replace(/[^a-zA-Z0-9 äöåÄÖÅ,.!?]/g, ' ') // Clean noise
+      .replace(/\s+/g, ' ');
+
+    if (text.length > 5) {
+      // Stability check: Only translate if text is similar to last frame
+      if (text === lastVisionText) {
+        stableCount++;
+      } else {
+        stableCount = 0;
+        lastVisionText = text;
+      }
+
+      // If text is stable for 2 cycles, translate it
+      if (stableCount >= 1) {
+        const source = langToggle.checked ? 'fi' : 'en';
+        const target = langToggle.checked ? 'en' : 'fi';
+
+        arLayer.innerHTML = `<div class="ar-tag" style="top:40%; left:20%">Translating...</div>`;
+
+        const response = await fetch(`https://api.mymemory.translated.net/get?q=${encodeURIComponent(text)}&langpair=${source}|${target}`);
+        const data = await response.json();
+
+        if (data.responseData && data.responseData.translatedText) {
+          const translated = data.responseData.translatedText;
+          arLayer.innerHTML = `<div class="ar-tag" style="top:40%; left:20%">✨ ${translated}</div>`;
+          updateSubtitles(translated);
+        }
+      }
+    }
+  } catch (err) {
+    console.warn('Vision OCR error', err);
+  }
+};
+
+// Cleanup camera on modal close
+const originalClose = closeModal.onclick;
+closeModal.onclick = () => {
+  if (cameraStream) {
+    cameraStream.getTracks().forEach(track => track.stop());
+    cameraStream = null;
+  }
+  clearInterval(visionInterval);
+  originalClose();
 };
 
 // --- VISUALIZER ---

@@ -1,4 +1,4 @@
-# LinguaVoice v5.0 (Pro Edition)
+# LinguaVoice v6.0 (Multimodal Pro)
 
 **LinguaVoice Pro** is a professional-grade, real-time voice translation and language learning suite.
 
@@ -6,6 +6,8 @@
 
 ## ✨ Features
 
+- **🎥 Live Vision (v6.0)**: Real-time camera translation with AR-style text overlays. Point your camera at text for instant interpretation.
+- **🎬 Movie-Style Subtitles**: Dynamic subtitle overlay that displays live voice and vision translations at the bottom of the screen.
 - **🎓 Pro Learning Suite**:
   - **Study Space**: Practice your favorite phrases with an interactive Flashcard system.
   - **Daily Goals**: Track your daily translation count with a progress ring.
