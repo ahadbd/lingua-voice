@@ -120,6 +120,10 @@ const toggleFavorite = () => {
 };
 
 const renderHistory = () => {
+  if (history.length === 0) {
+    historyList.innerHTML = '<div class="empty-state">No recent translations</div>';
+    return;
+  }
   historyList.innerHTML = history.map(item => `
     <div class="item-card" onclick="document.getElementById('original-text').textContent='${item.orig.replace(/'/g, "\\'")}'; document.getElementById('translated-text').textContent='${item.trans.replace(/'/g, "\\'")}';">
       <div class="orig">${item.orig}</div>
@@ -129,6 +133,10 @@ const renderHistory = () => {
 };
 
 const renderFavorites = () => {
+  if (favorites.length === 0) {
+    favoritesList.innerHTML = '<div class="empty-state">No favorites yet</div>';
+    return;
+  }
   favoritesList.innerHTML = favorites.map(item => `
     <div class="item-card">
       <div class="orig">${item.orig}</div>
@@ -185,9 +193,24 @@ const draw = () => {
 
   for (let i = 0; i < dataArray.length; i++) {
     const barHeight = (dataArray[i] / 255) * height;
-    ctx.fillStyle = getComputedStyle(body).getPropertyValue('--accent-color');
-    ctx.fillRect(x, height - barHeight, barWidth, barHeight);
-    x += barWidth + 1;
+
+    // Gradient Glow
+    const gradient = ctx.createLinearGradient(0, height - barHeight, 0, height);
+    gradient.addColorStop(0, getComputedStyle(body).getPropertyValue('--accent-color'));
+    gradient.addColorStop(1, getComputedStyle(body).getPropertyValue('--accent-secondary'));
+
+    ctx.fillStyle = gradient;
+    ctx.shadowBlur = 10;
+    ctx.shadowColor = getComputedStyle(body).getPropertyValue('--accent-color');
+
+    // Rounded bars
+    const radius = 4;
+    ctx.beginPath();
+    ctx.roundRect(x, height - barHeight, barWidth, barHeight, [radius, radius, 0, 0]);
+    ctx.fill();
+
+    ctx.shadowBlur = 0; // Reset for next bar
+    x += barWidth + 2;
   }
 };
 
@@ -353,6 +376,17 @@ downloadBtn.addEventListener('click', () => {
 copyTransBtn.addEventListener('click', () => copyToClipboard(translatedDisplay.textContent));
 starBtn.addEventListener('click', toggleFavorite);
 exportBtn.addEventListener('click', exportHistory);
+
+// Keyboard Shortcuts
+window.addEventListener('keydown', (e) => {
+  if (e.code === 'Space' && e.target === document.body) {
+    e.preventDefault();
+    listenBtn.click();
+  }
+  if (e.ctrlKey && e.key === 'c' && translatedDisplay.textContent) {
+    copyToClipboard(translatedDisplay.textContent);
+  }
+});
 
 // Initial Load
 renderHistory();

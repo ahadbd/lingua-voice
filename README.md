@@ -1,13 +1,20 @@
-# LinguaVoice v3.0
+# LinguaVoice v4.0
 
-**LinguaVoice** is a premium, real-time voice translation application designed for seamless interpretation between **English** and **Finnish**. Built with a focus on low latency and a stunning user experience, it transforms your browser into a powerful language assistant.
+**LinguaVoice** is a premium, real-time voice translation application designed exclusively for seamless bi-directional interpretation between **English** and **Finnish**. This app is dedicated specifically to English-to-Finnish and Finnish-to-English translations only.
 
 ![LinguaVoice Preview](screenshots/preview.png)
 
 ## ✨ Features
 
 - **🎙️ Real-time Voice Recognition**: Powered by the Web Speech API for high-accuracy, low-latency transcription.
-- **🎨 Premium Glassmorphism UI**: A modern, sleek interface with 4 unique themes (Midnight, Forest, Arctic, Obsidian).
+- **🎨 Premium UI/UX (v4.0)**: 
+  - **Glassmorphism 2.0**: High-blur cards with subtle inner glows.
+  - **Premium Typography**: Modern 'Outfit' font for better readability.
+  - **Smooth Animations**: Animated entry effects and interactive scale transitions.
+- **🌈 Visualizer 2.0**: Enhanced frequency bars with dynamic gradients and glow.
+- **⌨️ Keyboard Shortcuts**: 
+  - `Space`: Start/Stop recording.
+  - `Ctrl+C`: Copy translation.
 - **🗣️ Advanced Audio Tools**:
   - **Auto-Speak**: Hear translations automatically.
   - **Original Playback**: Listen to your own transcribed voice.
