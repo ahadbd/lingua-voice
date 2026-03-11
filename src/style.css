@@ -888,4 +888,29 @@ kbd {
   font-weight: 600;
   white-space: nowrap;
   animation: fadeIn 0.3s ease;
+  pointer-events: none;
+}
+
+/* Vision Focus Frame */
+.vision-focus-frame {
+  position: absolute;
+  top: 20%;
+  left: 20%;
+  width: 60%;
+  height: 60%;
+  border: 2px dashed rgba(255, 255, 255, 0.5);
+  border-radius: 10px;
+  box-sizing: border-box;
+  pointer-events: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.vision-focus-frame::after {
+  content: 'FOCUS AREA';
+  color: rgba(255, 255, 255, 0.3);
+  font-size: 0.7rem;
+  letter-spacing: 2px;
+  font-weight: 800;
 }

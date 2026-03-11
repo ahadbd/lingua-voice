@@ -10,7 +10,20 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
-  <title>LinguaVoice v5.0 (Pro Edition)</title>
+  <title>LinguaVoice v6.1 (Pro Vision 2.0)</title>
+  <script>
+    // Force cache clear for v6.1 update
+    const CURRENT_VERSION = '6.1';
+    if (localStorage.getItem('app_version') !== CURRENT_VERSION) {
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.getRegistrations().then(regs => {
+          for (let reg of regs) reg.unregister();
+        });
+      }
+      localStorage.setItem('app_version', CURRENT_VERSION);
+      console.log('App updated to v' + CURRENT_VERSION + '. Cache cleared.');
+    }
+  </script>
 </head>
 
 <body data-theme="midnight">

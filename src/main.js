@@ -381,6 +381,35 @@ shareImgBtn.onclick = async () => {
   showToast('Card saved to gallery!');
 };
 
+// --- UTILITIES ---
+const getSimilarity = (s1, s2) => {
+  if (!s1 || !s2) return 0;
+  let longer = s1.length > s2.length ? s1 : s2;
+  let shorter = s1.length > s2.length ? s2 : s1;
+  let longerLength = longer.length;
+  if (longerLength === 0) return 1.0;
+  return (longerLength - editDistance(longer, shorter)) / parseFloat(longerLength);
+};
+
+const editDistance = (s1, s2) => {
+  s1 = s1.toLowerCase(); s2 = s2.toLowerCase();
+  let costs = [];
+  for (let i = 0; i <= s1.length; i++) {
+    let lastValue = i;
+    for (let j = 0; j <= s2.length; j++) {
+      if (i === 0) costs[j] = j;
+      else if (j > 0) {
+        let newValue = costs[j - 1];
+        if (s1.charAt(i - 1) !== s2.charAt(j - 1)) newValue = Math.min(Math.min(newValue, lastValue), costs[j]) + 1;
+        costs[j - 1] = lastValue;
+        lastValue = newValue;
+      }
+    }
+    if (i > 0) costs[s2.length] = lastValue;
+  }
+  return costs[s2.length];
+};
+
 // --- LIVE VISION & SUBTITLES (v6.0) ---
 
 let cameraStream = null;
@@ -404,13 +433,14 @@ const updateSubtitles = (text, isInterim = false) => {
 };
 
 visionBtn.onclick = () => {
-  openModal('Live Vision', `
+  openModal('Live Vision 2.0', `
     <div class="vision-container">
       <video id="vision-video" autoplay playsinline muted></video>
+      <div class="vision-focus-frame"></div>
       <div id="vision-ar" class="vision-ar-layer"></div>
     </div>
-    <div style="margin-top: 1rem; text-align: center; color: var(--text-secondary);">
-      Point at text to translate in real-time
+    <div style="margin-top: 1rem; text-align: center; color: var(--text-secondary); font-size: 0.85rem">
+      Align text inside the focus box for pro results
     </div>
   `);
   startCamera();
@@ -425,7 +455,7 @@ const startCamera = async () => {
     video.srcObject = cameraStream;
 
     // Start OCR loop
-    visionInterval = setInterval(captureVisionFrame, 3000);
+    visionInterval = setInterval(captureVisionFrame, 2000);
   } catch (err) {
     console.error('Camera Error:', err);
     showToast('Camera access denied');
@@ -435,48 +465,77 @@ const startCamera = async () => {
 const captureVisionFrame = async () => {
   const video = document.getElementById('vision-video');
   const arLayer = document.getElementById('vision-ar');
-  if (!video || video.paused) return;
+  if (!video || video.paused || video.readyState < 2) return;
 
+  if (video.videoWidth < 100 || video.videoHeight < 100) return;
+
+  // --- Center-Weighted ROI (Crop to 60% of center) ---
   const canvas = document.createElement('canvas');
-  canvas.width = video.videoWidth;
-  canvas.height = video.videoHeight;
+  const cropSize = 0.6;
+  const sw = video.videoWidth * cropSize;
+  const sh = video.videoHeight * cropSize;
+  const sx = (video.videoWidth - sw) / 2;
+  const sy = (video.videoHeight - sh) / 2;
+
+  canvas.width = sw;
+  canvas.height = sh;
   const ctx = canvas.getContext('2d');
 
-  // Grayscale & Contrast for better OCR
-  ctx.filter = 'grayscale(1) contrast(1.2)';
-  ctx.drawImage(video, 0, 0);
+  ctx.filter = 'grayscale(1) contrast(1.6) brightness(1.2)';
+  ctx.drawImage(video, sx, sy, sw, sh, 0, 0, sw, sh);
 
   try {
     const result = await Tesseract.recognize(canvas, 'eng+fin');
     let text = result.data.text.trim()
-      .replace(/[^a-zA-Z0-9 äöåÄÖÅ,.!?]/g, ' ') // Clean noise
-      .replace(/\s+/g, ' ');
+      .replace(/[\n\r]+/g, ' ')
+      .replace(/[^a-zA-Z0-9 äöåÄÖÅ,.!?']/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim();
 
-    if (text.length > 5) {
-      // Stability check: Only translate if text is similar to last frame
-      if (text === lastVisionText) {
+    if (text.length > 3 && /[a-zA-Zäöå]/.test(text)) {
+      updateSubtitles(text, true);
+
+      // --- Fuzzy Stability (80% similarity threshold) ---
+      const similarity = getSimilarity(text, lastVisionText);
+      if (similarity > 0.8) {
         stableCount++;
       } else {
         stableCount = 0;
         lastVisionText = text;
+        return;
       }
 
-      // If text is stable for 2 cycles, translate it
       if (stableCount >= 1) {
         const source = langToggle.checked ? 'fi' : 'en';
         const target = langToggle.checked ? 'en' : 'fi';
+        const targetLabel = langToggle.checked ? 'EN' : 'FI';
 
-        arLayer.innerHTML = `<div class="ar-tag" style="top:40%; left:20%">Translating...</div>`;
+        arLayer.innerHTML = `<div class="ar-tag" style="top:40%; left:10%">🔄 Interpreting...</div>`;
 
         const response = await fetch(`https://api.mymemory.translated.net/get?q=${encodeURIComponent(text)}&langpair=${source}|${target}`);
         const data = await response.json();
 
-        if (data.responseData && data.responseData.translatedText) {
-          const translated = data.responseData.translatedText;
-          arLayer.innerHTML = `<div class="ar-tag" style="top:40%; left:20%">✨ ${translated}</div>`;
-          updateSubtitles(translated);
+        if (data.responseData) {
+          let translated = data.responseData.translatedText;
+
+          if (!translated || translated.toLowerCase().includes('unknown') || translated === text) {
+            arLayer.innerHTML = `<div class="ar-tag" style="top:40%; left:10%; background:rgba(255,165,0,0.5)">⚠️ Retrying...</div>`;
+            return;
+          }
+
+          // Force update AR Tag and Subtitles
+          arLayer.innerHTML = `
+            <div class="ar-tag" style="top:35%; left:10%">
+              <span style="font-size:0.6rem; opacity:0.8; display:block; margin-bottom:2px">TRANSLATED TO ${targetLabel}</span>
+              ✨ ${translated}
+            </div>`;
+
+          updateSubtitles(translated, false);
+          console.log(`Vision translated: ${text} -> ${translated}`);
         }
       }
+    } else if (text.length === 0) {
+      stableCount = 0;
     }
   } catch (err) {
     console.warn('Vision OCR error', err);
@@ -683,9 +742,14 @@ if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
         return;
       }
 
+      // Toggle Checked: Finnish -> English
+      // Toggle Unchecked: English -> Finnish
       const source = langToggle.checked ? 'fi' : 'en';
       const target = langToggle.checked ? 'en' : 'fi';
       translateText(finalTranscript, source, target);
+      updateSubtitles(finalTranscript, false);
+    } else {
+      updateSubtitles(interimTranscript, true);
     }
   };
 }
