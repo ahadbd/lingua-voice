@@ -2,7 +2,7 @@
 
 **LinguaVoice** is a premium, real-time voice translation application designed for seamless interpretation between **English** and **Finnish**. Built with a focus on low latency and a stunning user experience, it transforms your browser into a powerful language assistant.
 
-![LinguaVoice Preview](https://via.placeholder.com/800x450?text=LinguaVoice+v3.0+Preview)
+![LinguaVoice Preview](screenshots/preview.png)
 
 ## ✨ Features
 
